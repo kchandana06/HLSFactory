@@ -13,6 +13,24 @@ from hlsfactory.utils import (
 )
 
 
+def render_jinja_files(design_dir: Path, jinja_context: dict[str, Any]) -> None:
+    """Render every ``*.jinja`` file found under ``design_dir`` in place.
+
+    Each rendered file is written next to its template with the ``.jinja``
+    suffix dropped (e.g. ``foo.cpp.jinja`` -> ``foo.cpp``), and the template
+    file itself is removed.
+    """
+    jinja_files = sorted(design_dir.rglob("*.jinja"))
+
+    for jinja_file in jinja_files:
+        template: Template = Template(jinja_file.read_text())
+        # write the rendered template to the file without the .jinja extension
+        new_file = jinja_file.with_suffix("")
+        new_file.write_text(template.render(**jinja_context))
+        # remove the .jinja file
+        jinja_file.unlink()
+
+
 class JinjaFrontend(Frontend):
     name = "JinjaFrontend"
 
@@ -66,21 +84,7 @@ class JinjaFrontend(Frontend):
             )
             new_designs.append(new_design)
 
-            jinja_files = sorted(new_design.dir.rglob("*.jinja"))
-
-            for jinja_file in jinja_files:
-                t: Template = Template(
-                    jinja_file.read_text(),
-                )
-                # write the rendered template to the file without the .jinja extension
-                new_file = jinja_file.with_suffix("")
-                new_file.write_text(
-                    t.render(
-                        **jinja_config,
-                    ),
-                )
-                # remove the .jinja file
-                jinja_file.unlink()
+            render_jinja_files(new_design.dir, jinja_config)
 
         t_1 = time.perf_counter()
 

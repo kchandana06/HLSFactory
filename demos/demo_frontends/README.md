@@ -1,7 +1,8 @@
 # Frontend demos
 
-Both demos implement `out[i] = scale * a[i] + b[i]` and generate exactly four
-design variants: `(vector_size, scale)` = `(16, 2)`, `(16, 4)`, `(32, 2)`, `(32, 4)`.
+All three demos implement `out[i] = scale * a[i] + b[i]` and generate exactly
+four design variants: `(vector_size, scale)` = `(16, 2)`, `(16, 4)`, `(32, 2)`,
+`(32, 4)`.
 
 - `demo_frontend_jinja.py` passes four dictionaries to `JinjaFrontend`, which
   renders `vector_affine.cpp.jinja` into C++ source. It also sets `lanes` to
@@ -13,17 +14,26 @@ design variants: `(vector_size, scale)` = `(16, 2)`, `(16, 4)`, `(32, 2)`, `(32,
   the selected C++ implementation. Keep `vector_size` divisible by `lanes`.
 - `demo_frontend_define.py` passes four dictionaries of macro definitions to
   `CPPPreprocessorFrontend`, which runs `g++ -E` to produce concrete C++ source.
+- `demo_frontend_combined.py` passes four dictionaries with `"jinja"` and
+  `"defines"` keys to `CombinedFrontend`, which runs both stages in one pass:
+  it renders `vector_affine.cpp.jinja` with the `"jinja"` context first (same
+  structural parameterization as the Jinja demo), then runs the C++
+  preprocessor over the result with the `"defines"` dict (same macro
+  parameterization as the define demo). Two of the four variants set
+  `USE_SATURATE` to switch the generated design from plain to saturating
+  addition, independent of the Jinja-selected lane count.
 
 Each script then passes all four generated designs to `VitisHLSSynthFlow` for
 `csynth_design`, targeting `xc7z020clg400-1` with a 10 ns clock. Edit the design's
 `dataset_hls.tcl` to change the part or clock.
 
 From the repository root, with Vitis HLS configured and `vitis_hls` on `PATH`
-(and `g++` on `PATH` for the define demo), run:
+(and `g++` on `PATH` for the define and combined demos), run:
 
 ```bash
 uv run python demos/demo_frontends/demo_frontend_jinja.py
 uv run python demos/demo_frontends/demo_frontend_define.py
+uv run python demos/demo_frontends/demo_frontend_combined.py
 ```
 
 Optional arguments are `--work-dir PATH`, `--vitis-hls-bin PATH`, and
